@@ -1,9 +1,15 @@
 package com.hotel.management.user.entity;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.NoArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
@@ -11,8 +17,12 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+@EntityListeners(AuditingEntityListener.class)
 @Entity
 @Table(name = "users")
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class User implements UserDetails {
 
     @Id
@@ -37,10 +47,11 @@ public class User implements UserDetails {
     @Column(name = "is_active")
     private Boolean isActive = true;
 
-    @Column(name = "created_at")
+    @CreatedDate
+    @Column(updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at")
+    @LastModifiedDate
     private LocalDateTime updatedAt;
 
     @ManyToMany(fetch = FetchType.EAGER)
@@ -49,26 +60,8 @@ public class User implements UserDetails {
         joinColumns = @JoinColumn(name = "user_id"),
         inverseJoinColumns = @JoinColumn(name = "role_id")
     )
+    @Builder.Default
     private Set<Role> roles = new HashSet<>();
-
-    // Constructors
-    public User() {
-    }
-
-    public User(Long id, String firstName, String lastName, String email, 
-                String password, String phone, Boolean isActive, 
-                LocalDateTime createdAt, LocalDateTime updatedAt, Set<Role> roles) {
-        this.id = id;
-        this.firstName = firstName;
-        this.lastName = lastName;
-        this.email = email;
-        this.password = password;
-        this.phone = phone;
-        this.isActive = isActive;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.roles = roles;
-    }
 
     // Getters and Setters
     public Long getId() { return id; }
@@ -133,16 +126,5 @@ public class User implements UserDetails {
     @Override
     public boolean isEnabled() {
         return Boolean.TRUE.equals(isActive);
-    }
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
     }
 }

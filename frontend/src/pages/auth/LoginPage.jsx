@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import useAuthStore from '../../store/authStore';
@@ -28,15 +28,22 @@ const LoginPage = () => {
     
     try {
       const response = await axiosInstance.post('/auth/login', formData);
-      const { user, token } = response.data.data;
+      const data = response.data.data;
       
-      // Save auth state
-      login(user, token);
+      // FIXED: Data is flat, not nested inside a user object
+      const user = {
+        userId: data.userId,
+        email: data.email,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        roles: data.roles,
+      };
+      
+      login(user, data.token);
       
       toast.success('Login successful!');
       
-      // Redirect based on role
-      const roles = user.roles.map(role => role.name);
+      const roles = data.roles;
       
       if (roles.includes('ROLE_ADMIN') || roles.includes('ROLE_MANAGER')) {
         navigate('/manager');
@@ -48,6 +55,8 @@ const LoginPage = () => {
         navigate('/cleaner');
       }
     } catch (error) {
+      console.log('Full error:', error);
+      console.log('Error response:', error.response?.data);
       const message = error.response?.data?.message || 'Login failed. Please try again.';
       toast.error(message);
     } finally {

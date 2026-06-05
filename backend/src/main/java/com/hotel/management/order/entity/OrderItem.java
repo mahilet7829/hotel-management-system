@@ -1,7 +1,10 @@
 package com.hotel.management.order.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
 import java.math.BigDecimal;
 
 @Entity
@@ -11,25 +14,30 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@EntityListeners(AuditingEntityListener.class)
 public class OrderItem {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "order_id", nullable = false)
-    private Order order;
-    
     @Column(name = "item_name", nullable = false, length = 150)
     private String itemName;
     
-    @Column(name = "quantity", nullable = false)
+    @Column(nullable = false)
     private Integer quantity;
     
-    @Column(name = "unit_price", precision = 10, scale = 2)
+    @Column(name = "unit_price", nullable = false, precision = 10, scale = 2)
     private BigDecimal unitPrice;
     
-    @Column(name = "notes", columnDefinition = "TEXT")
+    @Column(precision = 10, scale = 2)
+    private BigDecimal subtotal;
+    
+    @Column(length = 500)
     private String notes;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "order_id", nullable = false)
+    @JsonBackReference
+    private Order order;
 }

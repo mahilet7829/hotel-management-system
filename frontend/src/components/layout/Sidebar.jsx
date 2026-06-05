@@ -48,7 +48,7 @@ const Sidebar = ({ navItems, title }) => {
 
       {/* Navigation */}
       <nav style={styles.nav}>
-        {navItems.map((item, index) => (
+        {(navItems || []).map((item, index) => (
           <NavLink
             key={index}
             to={item.path}

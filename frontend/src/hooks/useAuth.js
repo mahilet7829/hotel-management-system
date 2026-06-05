@@ -1,55 +1,46 @@
 import useAuthStore from '../store/authStore';
 
-export const useAuth = () => {
-  const { user, token, isAuthenticated, login, logout, updateUser } = useAuthStore();
+const useAuth = () => {
+  const user = useAuthStore((state) => state.user);
+  const token = useAuthStore((state) => state.token);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const isHydrated = useAuthStore((state) => state.isHydrated);
+  const logout = useAuthStore((state) => state.logout);
 
   const hasRole = (role) => {
-    if (!user || !user.roles) return false;
-    return user.roles.includes(role);
+    return user?.roles?.includes(role) || false;
   };
 
   const hasAnyRole = (roles) => {
-    if (!user || !user.roles) return false;
-    return roles.some((role) => user.roles.includes(role));
+    return roles.some(role => user?.roles?.includes(role)) || false;
   };
 
-  const isAdmin = () => hasRole('ROLE_ADMIN');
-  const isManager = () => hasAnyRole(['ROLE_ADMIN', 'ROLE_MANAGER']);
-  const isWaiter = () => hasRole('ROLE_WAITER');
-  const isChef = () => hasRole('ROLE_CHEF');
-  const isCleaner = () => hasRole('ROLE_CLEANER');
-
   const getDisplayName = () => {
-    if (!user) return '';
-    return `${user.firstName} ${user.lastName}`.trim();
+    if (!user) return 'User';
+    return `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'User';
   };
 
   const getRoleBadge = () => {
-    if (!user || !user.roles) return 'Staff';
-    if (hasRole('ROLE_ADMIN')) return 'Admin';
-    if (hasRole('ROLE_MANAGER')) return 'Manager';
-    if (hasRole('ROLE_WAITER')) return 'Waiter';
-    if (hasRole('ROLE_CHEF')) return 'Chef';
-    if (hasRole('ROLE_CLEANER')) return 'Cleaner';
-    return 'Staff';
+    const roles = user?.roles || [];
+    if (roles.includes('ROLE_ADMIN')) return 'Admin';
+    if (roles.includes('ROLE_MANAGER')) return 'Manager';
+    if (roles.includes('ROLE_WAITER')) return 'Waiter';
+    if (roles.includes('ROLE_CHEF')) return 'Chef';
+    if (roles.includes('ROLE_CLEANER')) return 'Cleaner';
+    return 'User';
   };
 
   return {
     user,
     token,
     isAuthenticated,
-    login,
-    logout,
-    updateUser,
+    isHydrated,
+    isLoading: !isHydrated,
     hasRole,
     hasAnyRole,
-    isAdmin,
-    isManager,
-    isWaiter,
-    isChef,
-    isCleaner,
     getDisplayName,
     getRoleBadge,
+    logout,
   };
 };
 

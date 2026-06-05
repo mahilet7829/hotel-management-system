@@ -1,9 +1,12 @@
 package com.hotel.management.order.entity;
 
 import com.hotel.management.room.entity.Room;
-import com.hotel.management.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -16,37 +19,39 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@EntityListeners(AuditingEntityListener.class)
 public class Order {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @Column(name = "order_number", nullable = false, unique = true, length = 50)
+    @Column(name = "order_number", unique = true, nullable = false, length = 50)
     private String orderNumber;
     
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "room_id")
-    private Room room;
+    @Column(name = "room_id")
+    private Long roomId;
     
     @Column(name = "table_number", length = 20)
     private String tableNumber;
     
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "waiter_id", nullable = false)
-    private User waiter;
+    @Column(name = "waiter_id")
+    private Long waiterId;
     
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "chef_id")
-    private User chef;
+    @Column(name = "chef_id")
+    private Long chefId;
     
-    @Column(name = "status", nullable = false, length = 30)
+    @Column(nullable = false, length = 30)
     private String status;
     
-    @Column(name = "notes", columnDefinition = "TEXT")
+    @Column(length = 500)
     private String notes;
     
-    @Column(name = "created_at")
+    @Column(name = "total_amount", precision = 10, scale = 2)
+    private BigDecimal totalAmount;
+    
+    @CreatedDate
+    @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
     
     @Column(name = "confirmed_at")
@@ -64,14 +69,10 @@ public class Order {
     @Column(name = "cancelled_at")
     private LocalDateTime cancelledAt;
     
-    @Column(name = "total_amount", precision = 10, scale = 2)
-    private BigDecimal totalAmount;
+    @LastModifiedDate
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
     
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<OrderItem> orderItems = new ArrayList<>();
-    
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-    }
+    private List<OrderItem> items = new ArrayList<>();
 }

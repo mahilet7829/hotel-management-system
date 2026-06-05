@@ -1,137 +1,127 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Toaster } from 'react-hot-toast';
+import useAuth from './hooks/useAuth';
 
-// Components
-import PrivateRoute from './components/layout/PrivateRoute';
+// Auth Components
+import Login from './pages/auth/LoginPage';
+import ProtectedRoute from './components/layout/PrivateRoute';
 
-// Pages
-import LoginPage from './pages/auth/LoginPage';
+// Dashboard Pages
+import ChefDashboard from './pages/chef/ChefDashboard';
 import ManagerDashboard from './pages/manager/ManagerDashboard';
 import WaiterDashboard from './pages/waiter/WaiterDashboard';
-import ChefDashboard from './pages/chef/ChefDashboard';
-import CleanerDashboard from './pages/cleaner/CleanerDashboard';
+import RoomsPage from './pages/manager/RoomsPage';
 
-// Create QueryClient
+// Phase 4 Pages
+import CleanerDashboard from './pages/cleaner/CleanerDashboard';
+import QRScanPage from './pages/cleaner/QRScanPage';
+import CleaningHistoryPage from './pages/cleaner/CleaningHistoryPage';
+import AssignCleaningPage from './pages/manager/AssignCleaningPage';
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      refetchOnWindowFocus: false,
+      staleTime: 5 * 60 * 1000,
       retry: 1,
-      staleTime: 5 * 60 * 1000, // 5 minutes
-    },
-  },
+      refetchOnWindowFocus: false
+    }
+  }
 });
 
-function App() {
-  // Function to determine redirect path based on user role
-  const getRedirectPath = () => {
-    const user = JSON.parse(localStorage.getItem('user') || 'null');
+const AppRoutes = () => {
+ const { user, isHydrated } = useAuth();
 
-    if (!user || !user.roles || user.roles.length === 0) {
-      return '/login';
-    }
+if (!isHydrated) {
+  return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>Loading...</div>;
+}
+  
+  return (
+    <Routes>
+      {/* Public Routes */}
+      <Route path="/login" element={!user ? <Login /> : <Navigate to="/" />} />
+      
+      {/* Protected Routes - Main Dashboard based on role */}
+     <Route path="/" element={
+  <ProtectedRoute>
+    {user?.roles?.includes('ROLE_ADMIN') ? <ManagerDashboard /> :
+     user?.roles?.includes('ROLE_MANAGER') ? <ManagerDashboard /> :
+     user?.roles?.includes('ROLE_CHEF') ? <ChefDashboard /> :
+     user?.roles?.includes('ROLE_WAITER') ? <WaiterDashboard /> :
+     user?.roles?.includes('ROLE_CLEANER') ? <CleanerDashboard /> :
+     <Navigate to="/login" />}
+  </ProtectedRoute>
+} />
 
-    // Roles are strings like ["ROLE_MANAGER"] not objects
-    const roles = user.roles;
 
-    if (roles.includes('ROLE_ADMIN') || roles.includes('ROLE_MANAGER')) {
-      return '/manager';
-    } else if (roles.includes('ROLE_WAITER')) {
-      return '/waiter';
-    } else if (roles.includes('ROLE_CHEF')) {
-      return '/chef';
-    } else if (roles.includes('ROLE_CLEANER')) {
-      return '/cleaner';
-    }
 
-    return '/login';
-  };
+      {/* Room Management */}
+      <Route path="/rooms" element={
+        <ProtectedRoute allowedRoles={['ROLE_ADMIN', 'ROLE_MANAGER']}>
+          <RoomsPage />
+        </ProtectedRoute>
+      } />
+      
+      {/* Manager Routes */}
+      <Route path="/manager" element={
+        <ProtectedRoute allowedRoles={['ROLE_ADMIN', 'ROLE_MANAGER']}>
+          <ManagerDashboard />
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/manager/cleaning" element={
+        <ProtectedRoute allowedRoles={['ROLE_ADMIN', 'ROLE_MANAGER']}>
+          <AssignCleaningPage />
+        </ProtectedRoute>
+      } />
+      
+      {/* Chef Routes */}
+      <Route path="/chef" element={
+        <ProtectedRoute allowedRoles={['ROLE_CHEF']}>
+          <ChefDashboard />
+        </ProtectedRoute>
+      } />
+      
+      {/* Waiter Routes */}
+      <Route path="/waiter" element={
+        <ProtectedRoute allowedRoles={['ROLE_WAITER']}>
+          <WaiterDashboard />
+        </ProtectedRoute>
+      } />
+      
+      {/* Cleaner Routes */}
+      <Route path="/cleaner" element={
+        <ProtectedRoute allowedRoles={['ROLE_CLEANER']}>
+          <CleanerDashboard />
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/cleaner/scan" element={
+        <ProtectedRoute allowedRoles={['ROLE_CLEANER']}>
+          <QRScanPage />
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/cleaner/history" element={
+        <ProtectedRoute allowedRoles={['ROLE_CLEANER']}>
+          <CleaningHistoryPage />
+        </ProtectedRoute>
+      } />
+      
+      {/* Fallback */}
+      <Route path="*" element={<Navigate to="/" />} />
+    </Routes>
+  );
+};
 
+const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
-      <Router>
-        <Toaster
-          position="top-right"
-          toastOptions={{
-            duration: 4000,
-            style: {
-              background: '#363636',
-              color: '#fff',
-            },
-            success: {
-              style: {
-                background: '#059669',
-              },
-            },
-            error: {
-              style: {
-                background: '#DC2626',
-              },
-            },
-          }}
-        />
-
-        <Routes>
-          {/* Public Routes */}
-          <Route path="/login" element={<LoginPage />} />
-
-          {/* Manager Routes (Admin has access too) */}
-          <Route
-            path="/manager/*"
-            element={
-              <PrivateRoute allowedRoles={['ROLE_ADMIN', 'ROLE_MANAGER']}>
-                <ManagerDashboard />
-              </PrivateRoute>
-            }
-          />
-
-          {/* Waiter Routes */}
-          <Route
-            path="/waiter/*"
-            element={
-              <PrivateRoute allowedRoles={['ROLE_WAITER']}>
-                <WaiterDashboard />
-              </PrivateRoute>
-            }
-          />
-
-          {/* Chef Routes */}
-          <Route
-            path="/chef/*"
-            element={
-              <PrivateRoute allowedRoles={['ROLE_CHEF']}>
-                <ChefDashboard />
-              </PrivateRoute>
-            }
-          />
-
-          {/* Cleaner Routes */}
-          <Route
-            path="/cleaner/*"
-            element={
-              <PrivateRoute allowedRoles={['ROLE_CLEANER']}>
-                <CleanerDashboard />
-              </PrivateRoute>
-            }
-          />
-
-          {/* Default Redirect */}
-          <Route
-            path="/"
-            element={<Navigate to={getRedirectPath()} replace />}
-          />
-
-          {/* Catch-all - redirect to appropriate dashboard */}
-          <Route
-            path="*"
-            element={<Navigate to={getRedirectPath()} replace />}
-          />
-        </Routes>
-      </Router>
+      <BrowserRouter>
+        <AppRoutes />
+      </BrowserRouter>
     </QueryClientProvider>
   );
-}
+};
 
 export default App;

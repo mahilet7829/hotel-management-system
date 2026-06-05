@@ -1,174 +1,81 @@
-import { useState } from 'react';
-import Sidebar from "../../components/layout/Sidebar";
-import Header from "../../components/layout/Header";
-import useAuth from "../../hooks/useAuth";
+import React from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
+import orderApi from '../../api/orderApi';
+import LoadingSpinner from '../../components/shared/LoadingSpinner';
+import StatusBadge from '../../components/shared/StatusBadge';
 
 const WaiterDashboard = () => {
-  const { getDisplayName, getRoleBadge } = useAuth();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const navigate = useNavigate();
 
-  const navItems = [
-    { label: 'My Orders', path: '/waiter', icon: '📋' },
-    { label: 'New Order', path: '/waiter/new-order', icon: '➕' },
-    { label: 'Tables', path: '/waiter/tables', icon: '🪑' },
-  ];
+  const { data: myOrders, isLoading } = useQuery({
+    queryKey: ['myOrders'],
+    queryFn: () => orderApi.getMyOrders({ page: 0, size: 10 }),
+  });
 
-  const statCards = [
-    { label: 'My Orders Today', value: '12', icon: '📦', color: '#3B82F6' },
-    { label: 'Pending', value: '3', icon: '⏳', color: '#F59E0B' },
-    { label: 'Delivered', value: '9', icon: '✅', color: '#10B981' },
-    { label: 'Avg Time', value: '8 min', icon: '⏱️', color: '#8B5CF6' },
-  ];
+  if (isLoading) return <LoadingSpinner />;
+
+  const orders = myOrders?.data?.content || [];
+  const activeOrders = orders.filter(o => o.status !== 'DELIVERED' && o.status !== 'CANCELLED');
+  const deliveredToday = orders.filter(o => o.status === 'DELIVERED');
 
   return (
-    <div style={styles.layout}>
-      <Sidebar navItems={navItems} title="Hotel Management" />
-      <div style={styles.mainArea}>
-        <Header title="My Orders" onMenuToggle={() => setMobileMenuOpen(!mobileMenuOpen)} />
-        <main style={styles.content}>
-          {/* Welcome Card */}
-          <div style={styles.welcomeCard}>
-            <div style={styles.welcomeContent}>
-              <h2 style={styles.welcomeTitle}>
-                Welcome, {getDisplayName()}!
-              </h2>
-              <p style={styles.welcomeSubtitle}>
-                Manage your orders and tables efficiently.
-              </p>
-              <span style={styles.welcomeBadge}>{getRoleBadge()}</span>
-            </div>
-            <div style={styles.welcomeIcon}>🍽️</div>
-          </div>
+    <div style={{ padding: '20px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <h1 style={{ fontSize: '24px', fontWeight: 'bold' }}>Waiter Dashboard</h1>
+        <button
+          onClick={() => navigate('/waiter/new-order')}
+          style={{ padding: '12px 24px', backgroundColor: '#3b82f6', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '16px', fontWeight: 'bold' }}
+        >
+          + New Order
+        </button>
+      </div>
 
-          {/* Stats Grid */}
-          <div style={styles.statsGrid}>
-            {statCards.map((stat, index) => (
-              <div key={index} style={styles.statCard}>
-                <div style={styles.statHeader}>
-                  <span style={styles.statIcon}>{stat.icon}</span>
-                  <span style={styles.statValue}>{stat.value}</span>
-                </div>
-                <p style={styles.statLabel}>{stat.label}</p>
-                <div
-                  style={{
-                    ...styles.statAccent,
-                    backgroundColor: stat.color,
-                  }}
-                />
-              </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+        <div style={{ padding: '20px', backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+          <div style={{ fontSize: '14px', color: '#6b7280' }}>Active Orders</div>
+          <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#3b82f6' }}>{activeOrders.length}</div>
+        </div>
+        <div style={{ padding: '20px', backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+          <div style={{ fontSize: '14px', color: '#6b7280' }}>Delivered Today</div>
+          <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#10b981' }}>{deliveredToday.length}</div>
+        </div>
+        <div style={{ padding: '20px', backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', cursor: 'pointer' }}
+          onClick={() => navigate('/waiter/new-order')}>
+          <div style={{ fontSize: '14px', color: '#6b7280' }}>Quick Action</div>
+          <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#f59e0b' }}>Create Order</div>
+        </div>
+      </div>
+
+      <div style={{ backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
+        <h2 style={{ padding: '16px', fontSize: '18px', fontWeight: 'bold', borderBottom: '1px solid #e5e7eb' }}>Recent Orders</h2>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead>
+            <tr style={{ backgroundColor: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
+              <th style={{ padding: '12px', textAlign: 'left' }}>Order #</th>
+              <th style={{ padding: '12px', textAlign: 'left' }}>Location</th>
+              <th style={{ padding: '12px', textAlign: 'left' }}>Items</th>
+              <th style={{ padding: '12px', textAlign: 'left' }}>Status</th>
+              <th style={{ padding: '12px', textAlign: 'left' }}>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {orders.map(order => (
+              <tr key={order.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                <td style={{ padding: '12px' }}>{order.orderNumber}</td>
+                <td style={{ padding: '12px' }}>{order.roomNumber || order.tableNumber || '-'}</td>
+                <td style={{ padding: '12px' }}>{order.items.length} items</td>
+                <td style={{ padding: '12px' }}>
+                  <StatusBadge status={order.status} />
+                </td>
+                <td style={{ padding: '12px' }}>${order.totalAmount}</td>
+              </tr>
             ))}
-          </div>
-        </main>
+          </tbody>
+        </table>
       </div>
     </div>
   );
-};
-
-const styles = {
-  layout: {
-    display: 'flex',
-    height: '100vh',
-    overflow: 'hidden',
-  },
-  mainArea: {
-    flex: 1,
-    display: 'flex',
-    flexDirection: 'column',
-    overflow: 'auto',
-  },
-  content: {
-    padding: '24px',
-    backgroundColor: '#F9FAFB',
-    flex: 1,
-  },
-  welcomeCard: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '28px 32px',
-    background: 'linear-gradient(135deg, #065F46 0%, #10B981 100%)',
-    borderRadius: '16px',
-    color: '#ffffff',
-    marginBottom: '24px',
-    boxShadow: '0 4px 20px rgba(6, 95, 70, 0.3)',
-  },
-  welcomeContent: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '8px',
-  },
-  welcomeTitle: {
-    margin: 0,
-    fontSize: '22px',
-    fontWeight: '700',
-    color: '#ffffff',
-  },
-  welcomeSubtitle: {
-    margin: 0,
-    fontSize: '14px',
-    color: '#D1FAE5',
-  },
-  welcomeBadge: {
-    display: 'inline-block',
-    padding: '4px 14px',
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    color: '#D1FAE5',
-    borderRadius: '20px',
-    fontSize: '12px',
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: '0.5px',
-    width: 'fit-content',
-    marginTop: '4px',
-  },
-  welcomeIcon: {
-    fontSize: '48px',
-    opacity: 0.8,
-  },
-  statsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-    gap: '20px',
-  },
-  statCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: '12px',
-    padding: '20px 24px',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-    border: '1px solid #f3f4f6',
-    position: 'relative',
-    overflow: 'hidden',
-    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-    cursor: 'pointer',
-  },
-  statHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '12px',
-  },
-  statIcon: {
-    fontSize: '28px',
-  },
-  statValue: {
-    fontSize: '28px',
-    fontWeight: '700',
-    color: '#111827',
-  },
-  statLabel: {
-    margin: 0,
-    fontSize: '14px',
-    color: '#6B7280',
-    fontWeight: '500',
-  },
-  statAccent: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: '3px',
-    borderRadius: '0 0 12px 12px',
-  },
 };
 
 export default WaiterDashboard;

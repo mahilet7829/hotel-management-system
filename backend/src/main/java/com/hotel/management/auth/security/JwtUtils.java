@@ -14,6 +14,8 @@ import org.springframework.stereotype.Component;
 import java.security.Key;
 import java.util.Date;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Component
 @Slf4j
@@ -24,7 +26,8 @@ public class JwtUtils {
 
     @Value("${app.jwt.expiration-ms}")
     private int jwtExpirationMs;
-
+    
+    private static final Logger log = LoggerFactory.getLogger(JwtUtils.class);
     public String generateToken(Authentication authentication) {
         User user = (User) authentication.getPrincipal();
 

@@ -1,50 +1,50 @@
 package com.hotel.management.notification.entity;
 
-import com.hotel.management.user.entity.User;
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "notifications")
-@Getter
-@Setter
+@Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@EntityListeners(AuditingEntityListener.class)
 public class Notification {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "recipient_id", nullable = false)
-    private User recipient;
+    @Column(nullable = false)
+    private Long recipientId;
     
-    @Column(name = "title", nullable = false, length = 200)
+    @Column(nullable = false)
     private String title;
     
-    @Column(name = "message", columnDefinition = "TEXT")
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String message;
     
-    @Column(name = "type", length = 50)
+    @Column(nullable = false)
     private String type;
     
-    @Column(name = "is_read")
+    @Column(nullable = false)
     private Boolean isRead = false;
     
-    @Column(name = "created_at")
+    @CreatedDate
+    @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
     
-    @Column(name = "related_entity_type", length = 50)
+    @Column
     private String relatedEntityType;
     
-    @Column(name = "related_entity_id")
+    @Column
     private Long relatedEntityId;
-    
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-    }
 }
